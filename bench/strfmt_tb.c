@@ -166,8 +166,22 @@ void strfmt_integral_bench()
         start = clock();
         for (int i=1000; i--;) {
             for (int j=1000; j--;) {
+                char* p = printu64(buf, (uint64_t)rands[j]);
+                bytes += (int)(p - buf);
+            }
+        }
+        end = clock();
+        ticks += ((double)(end - start)) / CLOCKS_PER_SEC;
+    }
+    printf("\tprintu64():\t\t%.3f (bytes: %lu, 10M)\n", ticks, bytes);
+
+    bytes = 0; ticks = 0.0;
+    for (int k=10; k--;) {
+        start = clock();
+        for (int i=1000; i--;) {
+            for (int j=1000; j--;) {
                 char* p = printi64(buf, (int64_t)rands[j]);
-                bytes += 21 - (int)(p - buf);
+                bytes += (int)(p - buf);
             }
         }
         end = clock();

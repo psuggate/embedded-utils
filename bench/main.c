@@ -2,6 +2,10 @@
 #include "strfmt_tb.h"
 #include "response_tb.h"
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 
 int main(int argc, char* argv[])
 {

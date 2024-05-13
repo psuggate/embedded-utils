@@ -237,25 +237,31 @@ int sprintu32(char* buf, uint32_t n)
 
 char* printu64(char* buf, uint64_t x)
 {
-    int i = MAX_UINT64_BYTES - 1;
-    buf[i] = '\0';
-    do
-    {
-        buf[--i] = '0' + (char)(x % 10);
+    char m[MAX_UINT64_BYTES - 1];
+    char* p = &m[MAX_UINT64_BYTES - 2];
+
+    do {
+        *p-- = '0' + x % 10;
         x /= 10;
-    } while (x);
-    return buf + i;
+    }
+    while (x != 0);
+
+    size_t n = &m[MAX_UINT64_BYTES - 2] - p;
+
+    memcpy(buf, p+1, n);
+    buf += n;
+    *buf = '\0';
+
+    return buf;
 }
 
 static inline char* __printi64(char* buf, int64_t n)
 {
     if (n < 0) {
-        char* ptr = printu64(buf + 1, -n);
-        *(--ptr) = '-';
-        return ptr;
-    } else {
-        return printu64(buf + 1, n);
+	n = -n;
+        *(buf++) = '-';
     }
+    return printu64(buf, n);
 }
 
 char* printi64(char* buf, int64_t n)
@@ -269,18 +275,14 @@ char* printi64(char* buf, int64_t n)
  */
 int sprinti64(char* buf, int64_t n)
 {
-    char* ptr = printi64(buf, n);
-    size_t len = MAX_SINT64_BYTES - (size_t)(ptr - buf);
-    memmove(buf, ptr, len);
-    return len - 1;
+    char* ptr = __printi64(buf, n);
+    return (int)(ptr - buf);
 }
 
 int sprintu64(char* buf, uint64_t n)
 {
     char* ptr = printu64(buf, n);
-    size_t len = MAX_UINT64_BYTES - (size_t)(ptr - buf);
-    memmove(buf, ptr, len);
-    return len - 1;
+    return (int)(ptr - buf);
 }
 
 
