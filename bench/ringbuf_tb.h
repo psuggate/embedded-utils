@@ -1,5 +1,5 @@
-#ifndef __RESPONSE_TB_H__
-#define __RESPONSE_TB_H__
+#ifndef __RINGBUF_TB_H__
+#define __RINGBUF_TB_H__
 
 
 #ifdef __cplusplus
@@ -10,7 +10,7 @@ extern "C"
 
 // -- Exported functions -- //
 
-void response_tb();
+void ringbuf_tb();
 
 
 #ifdef __cplusplus
@@ -18,4 +18,4 @@ void response_tb();
 #endif
 
 
-#endif /* __RESPONSE_TB_H__ */
+#endif /* __RINGBUF_TB_H__ */

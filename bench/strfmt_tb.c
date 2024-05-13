@@ -27,8 +27,6 @@ static int f32_to_str(char* buf, float x)
     return n - 7;
 }
 
-// __attribute__((strict_aliasing)) // how??
-// __attribute__((unused)) //suppress compiler warning
 void dump_float_bits(float x)
 {
     uint32_t* ptr = (uint32_t*)(&x);
@@ -522,17 +520,6 @@ void strfmt_tb()
 {
     time_t t;
     srand((unsigned) time(&t));
-
-    int16_t x = -4567;
-    char buf[8];
-    int n = sprinti16(buf, x);
-    printf("x: %s (%hd, len = %d)\n", buf, x, n);
-    n = printi16(buf, x) - buf;
-    printf("x: %s (%hd, len = %d)\n", buf, x, n);
-    int m = sprintu16(buf, (uint16_t)x);
-    printf("x: %s (%hu, len = %d)\n", buf, x, m);
-    m = printu16(buf, (uint16_t)x) - buf;
-    printf("x: %s (%hu, len = %d)\n", buf, x, m);
 
     strfmt_integral_bench();
     strfmt_floating_bench();
