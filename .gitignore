@@ -29,6 +29,7 @@
 *.dylib
 
 # Executables
+bench/bench
 *.exe
 *.out
 *.app

@@ -12,7 +12,7 @@ clean:
 	rm *.o bench
 
 bench: $(TOP) $(OBJ)
-	gcc $^ -Wall -lm -O3 -o $@
+	gcc -I../src/ $^ -Wall -lm -O3 -o $@
 
 %.o: %.c
-	gcc $^ -Wall -O3 -c -o $@
+	gcc -I../src/ $^ -Wall -O3 -c -o $@

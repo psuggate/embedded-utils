@@ -8,7 +8,7 @@ src:
 	@make -C src all
 
 bench:	src
-	@make -C bench all
+	@make -C bench bench
 
 clean:
 	@make -C bench clean
