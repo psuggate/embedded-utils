@@ -1,13 +1,5 @@
 #include "strfmt.h"
 
-#ifdef __release
-#define assert(x)
-#else
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#endif
-
 
 // -- Size-limits for various conversions -- //
 
@@ -304,7 +296,6 @@ int sprintu64(char* buf, uint64_t n)
 uint64_t bankers64(uint64_t frac, int* limit)
 {
     int n = *limit;
-    assert(n > 0);
 
     const uint64_t bsel = 1ul << 60;
     const uint64_t mask = bsel - 1ul;
@@ -338,8 +329,8 @@ int frac_to_str(char* buf, uint64_t frac, int limit)
 {
     int len = 0;
     while (frac != 0 && len < limit) {
-        frac &= (1ul << 60) - 1ul;
-        frac *= 10;
+        frac &= ((uint64_t)1 << 60) - (uint64_t)1;
+        frac *= (uint64_t)10;
         buf[len++] = '0' + (frac >> 60);
     }
     buf[len] = '\0';
@@ -383,22 +374,22 @@ int float_to_str(char* buf, float x)
     // Extract, shift, and scale the fractional part of the mantissa.
     if (expo > 16) {
         shift = 23 - expo;
-        scale = 1000000ul;
-        mbits = 1ul << shift;
+        scale = 1000000;
+        mbits = (uint64_t)1 << shift;
     } else {
         shift = 17 - expo;
-        scale = 15625ul;
-        mbits = 64ul << shift;
+        scale = 15625;
+        mbits = (uint64_t)64 << shift;
     }
-    uint64_t lmant = ((uint64_t)mant & (mbits - 1ul)) * scale;
+    uint64_t lmant = ((uint64_t)mant & (mbits - (uint64_t)1)) * scale;
 
     // Compute bit -selects/-masks for (Bankers') rounding
-    uint64_t obits = 1ul << shift; // Odd/even bit-select
+    uint64_t obits = (uint64_t)1 << shift; // Odd/even bit-select
     uint64_t rbits = obits >> 1;   // Rounding bit-select
-    uint64_t smask = rbits - 1ul;  // Sticky-bits mask
-    int oddlsb = (lmant & obits) != 0ul;
-    int roundy = (lmant & rbits) != 0ul;
-    int sticky = (lmant & smask) != 0ul;
+    uint64_t smask = rbits - (uint64_t)1;  // Sticky-bits mask
+    int oddlsb = (lmant & obits) != (uint64_t)0;
+    int roundy = (lmant & rbits) != (uint64_t)0;
+    int sticky = (lmant & smask) != (uint64_t)0;
 
     uint32_t frac = (lmant >> shift) + (roundy && (oddlsb || sticky) ? 1 : 0);
 
