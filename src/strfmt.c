@@ -237,6 +237,7 @@ int sprintu32(char* buf, uint32_t n)
 
 char* printu64(char* buf, uint64_t x)
 {
+#if 1
     char m[MAX_UINT64_BYTES - 1];
     char* p = &m[MAX_UINT64_BYTES - 2];
 
@@ -247,8 +248,27 @@ char* printu64(char* buf, uint64_t x)
     while (x != 0);
 
     size_t n = &m[MAX_UINT64_BYTES - 2] - p;
-
     memcpy(buf, p+1, n);
+#else
+
+    char* const end = &buf[MAX_UINT64_BYTES - 1];
+    char* p = end;
+
+    do {
+        *(--p) = '0' + x % 10;
+        x /= 10;
+    }
+    while (x != 0);
+
+    if (p == buf) {
+	*end = '\0';
+	return end;
+    }
+
+    size_t n = end - p;
+    memmove(buf, p, n);
+#endif
+
     buf += n;
     *buf = '\0';
 
