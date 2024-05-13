@@ -13,7 +13,7 @@ void response_tb()
     int idx;
     char* buf;
 
-    printf("Response-buffer Testbench\n");
+    printf("\nResponse-buffer Testbench\n");
     
     buf = sda_start(&idx);
     assert(buf != NULL);
