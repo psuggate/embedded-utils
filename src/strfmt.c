@@ -233,6 +233,19 @@ int sprintu32(char* buf, uint32_t n)
 }
 
 
+char* hex32(char* buf, uint32_t x)
+{
+    for (int i=8; i--;)
+    {
+        uint8_t v = x & 0x0f;
+        buf[i] = v > 9 ? 'A' - 10 + v : '0' + v;
+        x >>= 4;
+    }
+    *(buf+=8) = '\0';
+    return buf;
+}
+
+
 // -- 64-bit printing -- //
 
 char* printu64(char* buf, uint64_t x)

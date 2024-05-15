@@ -279,6 +279,20 @@ void strfmt_integral_bench()
         start = clock();
         for (int i=1000; i--;) {
             for (int j=1000; j--;) {
+                int n = hex32(buf, (uint32_t)rands[j]) - buf;
+                bytes += n;
+            }
+        }
+        end = clock();
+        ticks += ((double)(end - start)) / CLOCKS_PER_SEC;
+    }
+    printf("\thex32():\t\t%.3f (bytes: %lu, 10M)\n", ticks, bytes);
+
+    bytes = 0; ticks = 0.0;
+    for (int k=10; k--;) {
+        start = clock();
+        for (int i=1000; i--;) {
+            for (int j=1000; j--;) {
                 int n = sprintf(buf, "%d", (int32_t)rands[j]);
                 bytes += n;
             }
@@ -376,6 +390,7 @@ void strfmt_integral_correct(const int reps)
     char fmtu64[] = "i: %07d  =>  x = %lu, p: '%s' (n = %d), q: '%s' (m = %d)\n";
     char fmti32[] = "i: %07d  =>  x = %d, p: '%s' (n = %d), q: '%s' (m = %d)\n";
     char fmtu32[] = "i: %07d  =>  x = %u, p: '%s' (n = %d), q: '%s' (m = %d)\n";
+    char fmth32[] = "i: %07d  =>  x = %08X, p: '%s' (n = %d), q: '%s' (m = %d)\n";
     for (int i=reps; i--;) {
         x = (uint64_t)rand() << 62 | (uint64_t)rand() << 31 | (uint64_t)rand();
 
@@ -424,6 +439,17 @@ void strfmt_integral_correct(const int reps)
         }
         if (strcmp(p, q) != 0) {
             printf(fmtu32, i, (uint32_t)x, p, n, q, m);
+            assert(strcmp(p, q) == 0);
+        }
+
+	n = sprintf(p, "%08X", (uint32_t)x);
+	m = hex32(q, x) - q;
+        if (n != m) {
+            printf(fmtu32, i, (uint32_t)x, p, n, q, m);
+            assert(n == m);
+        }
+        if (strcmp(p, q) != 0) {
+            printf(fmth32, i, (uint32_t)x, p, n, q, m);
             assert(strcmp(p, q) == 0);
         }
     }

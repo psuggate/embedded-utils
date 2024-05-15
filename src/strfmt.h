@@ -30,6 +30,8 @@ char* printi32(char* buf, int32_t n);
 int sprinti32(char* buf, int32_t n);
 int sprintu32(char* buf, uint32_t n);
 
+char* hex32(char* buf, uint32_t x);
+
 char* printu64(char* buf, uint64_t n);
 char* printi64(char* buf, int64_t n);
 int sprinti64(char* buf, int64_t n);
