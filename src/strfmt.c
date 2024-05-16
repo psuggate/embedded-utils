@@ -20,21 +20,6 @@
 #define __use_bankers_rounding
 
 
-/**
- * Append the 'src' string into the 'dst' string, returning the number of chars
- * that were appended.
- */
-int strapp(char* dst, char* src)
-{
-    char c, *p = src;
-    do {
-        c = *p++;
-        *dst++ = c;
-    } while (c != '\0');
-    return p - src - 1;
-}
-
-
 // -- 16-bit printing -- //
 
 static inline char* __printu16(char* buf, uint16_t n)
@@ -378,9 +363,9 @@ int frac_to_str(char* buf, uint64_t frac, int limit)
 int float_to_str(char* buf, float x)
 {
     if (x > MAX_INTEG_VALUE) {
-        strcpy(buf, "+Inf");
+        return stpcpy(buf, "+Inf") - buf;
     } else if (x < MIN_INTEG_VALUE) {
-        strcpy(buf, "-Inf");
+        return stpcpy(buf, "-Inf") - buf;
     }
 
     int len = 0;

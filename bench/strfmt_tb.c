@@ -40,6 +40,10 @@ void dump_float_bits(float x)
 }
 
 
+//
+//  Performance
+///
+
 void strfmt_floating_bench()
 {
     clock_t start, end;
@@ -377,6 +381,10 @@ void strfmt_integral_bench()
 }
 
 
+//
+//  Correctness
+///
+
 void strfmt_integral_correct(const int reps)
 {
     char p[32];
@@ -537,23 +545,9 @@ void strfmt_correct(const int reps)
 }
 
 
-void strapp_correct()
-{
-    char dst[256] = {0};
-    char src[256] = "Salad, potato, gelatine, and kiwi.";
-
-    printf("\nTesting string-utilities for correctness:\n");
-
-    int n = strlen(src);
-    int m = strapp(dst, src);
-    int o = strlen(dst);
-
-    assert(n == m);
-    assert(n == o);
-
-    printf("passed\n\n");
-}
-
+//
+//  Top-Level
+///
 
 void strfmt_tb()
 {
@@ -563,6 +557,5 @@ void strfmt_tb()
     strfmt_integral_bench();
     strfmt_floating_bench();
 
-    strapp_correct();
     strfmt_correct(10000000);
 }

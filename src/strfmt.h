@@ -44,8 +44,6 @@ int double_to_str(char* buf, double n);
 
 // -- Helper-functions -- //
 
-int strapp(char* dst, char* src);
-
 int frac_to_str(char* buf, uint64_t frac, int limit);
 uint64_t bankers64(uint64_t frac, int* limit);
 
