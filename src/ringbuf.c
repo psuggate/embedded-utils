@@ -1,3 +1,4 @@
+#include <string.h>
 #include "ringbuf.h"
 
 /**
@@ -31,6 +32,88 @@ ringbuf_t* rb_create(void* rb_ptr, int32_t size)
 void rb_clear(ringbuf_t* rb)
     {
     rb->tail = rb->head;
+    }
+
+/**
+ * Fill as many entries as required or possible, and returns the number of bytes
+ * written.
+ */
+int32_t rb_fill(ringbuf_t* rb, const uint8_t* src, int32_t len)
+    {
+    int32_t count = rb_space(rb);
+    int32_t head = rb->head;
+    uint8_t* dst;
+
+    if (count < len)
+        {
+        // Partial fill
+        len = count;
+        }
+    count = 0;
+
+    if (head + len > rb->wrap)
+        {
+        // If 'len' requires a "wrap," then first fill to the end of the buffer
+        count = rb->wrap - head + 1;
+	dst = (uint8_t*)rb->data + head;
+        memcpy((void*)dst, (const void*)src, count);
+        len -= count;
+	src += count;
+        head = 0;
+        }
+
+    // Write (remaining) bytes into buffer, at the current "head"
+    dst = (uint8_t*)rb->data + head;
+    memcpy((void*)dst, (const void*)src, len);
+    head += len;
+    count += len;
+
+    // Update the 'ringbuf_t'
+    // Todo: atomically ??
+    rb->head = head & rb->wrap;
+
+    return count;
+    }
+
+/**
+ * Take as many entries as required or possible, and returns the number of bytes
+ * read.
+ */
+int32_t rb_take(ringbuf_t* rb, uint8_t* dst, int32_t len)
+    {
+    int32_t count = rb_count(rb);
+    int32_t tail = rb->tail;
+    uint8_t* src;
+
+    if (count < len)
+        {
+        // Partial take
+        len = count;
+        }
+    count = 0;
+
+    if (tail + count > rb->wrap)
+        {
+        // If 'len' requires a "wrap," then first take to the end of the buffer
+        count = rb->wrap - tail + 1;
+	src = (uint8_t*)rb->data + tail;
+        memcpy((void*)dst, (const void*)src, len);
+        len -= count;
+	dst += count;
+        tail = 0;
+        }
+
+    // Read (remaining) bytes into 'dst' buffer, from the current "tail"
+    src = (uint8_t*)rb->data + tail;
+    memcpy(dst, (const void*)src, len);
+    tail += len;
+    count += len;
+
+    // Update the 'ringbuf_t'
+    // Todo: atomically ??
+    rb->tail = tail & rb->wrap;
+
+    return count;
     }
 
 

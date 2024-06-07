@@ -64,3 +64,44 @@ void ringbuf_tb() {
 
     free(rb_mem);
 }
+
+
+//
+//  Tests for a buffer of bytes, with chunked reads & writes.
+///
+#define BYTEBUF_BYTES 2048
+
+void bytebuf_tb() {
+    assert(sizeof(ringbuf_t) == 24);
+    void* bb_mem = malloc(sizeof(ringbuf_t) + BYTEBUF_BYTES);
+    ringbuf_t* rb = rb_create(bb_mem, BYTEBUF_BYTES);
+    uint32_t* chunk = malloc(256);
+    int32_t length;
+
+    printf("\nBytebuf Sanity-Checks (10M chunks):\n");
+
+    int count = 0;
+    for (int i=10000000; i--;) {
+	length = rand() & 0x0ff;
+
+	if (rand() & 0x1) {
+	    // Make a "chunk", then "fill" it into the ringbuf
+	    int words = (length + 3) >> 2;
+	    assert(words >= 0 && words <= 64);
+	    for (int j=words; j--;) {
+		assert(j >=0 && j < 64);
+		chunk[j] = rand();
+	    }
+	    count += rb_fill(rb, (uint8_t*)chunk, length);
+	} else {
+	    // Take a "chunk" from the ringbuf
+	    count -= rb_take(rb, (uint8_t*)chunk, length);
+	}
+	assert(count >= 0 && count < BYTEBUF_BYTES);
+    }
+
+    printf("passed\n");
+
+    free(chunk);
+    free(bb_mem);
+}

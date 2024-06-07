@@ -11,6 +11,7 @@ extern "C"
 // -- Exported functions -- //
 
 void ringbuf_tb();
+void bytebuf_tb();
 
 
 #ifdef __cplusplus
