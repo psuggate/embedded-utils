@@ -116,6 +116,24 @@ int32_t rb_take(ringbuf_t* rb, uint8_t* dst, int32_t len)
     return count;
     }
 
+/**
+ * Drop the inidicated number of entries, if possible, and returns the number of
+ * bytes dropped.
+ */
+int32_t rb_drop(ringbuf_t* rb, int32_t len)
+    {
+    int32_t count = rb_count(rb);
+
+    if (count < len)
+        {
+        // Partial drop
+        len = count;
+        }
+    rb->tail = (rb->tail + len) & rb->wrap;
+
+    return len;
+    }
+
 
 /**
  * Acquire an index into a buffer of buffers/structs.

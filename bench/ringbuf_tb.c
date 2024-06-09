@@ -81,10 +81,13 @@ void bytebuf_tb() {
     printf("\nBytebuf Sanity-Checks (10M chunks):\n");
 
     int count = 0;
+    int mode;
     for (int i=10000000; i--;) {
-	length = rand() & 0x0ff;
+	mode = rand();
+	length = mode & 0x0ff;
+	mode >>= 8;
 
-	if (rand() & 0x1) {
+	if (mode & 0x1) {
 	    // Make a "chunk", then "fill" it into the ringbuf
 	    int words = (length + 3) >> 2;
 	    assert(words >= 0 && words <= 64);
@@ -95,7 +98,11 @@ void bytebuf_tb() {
 	    count += rb_fill(rb, (uint8_t*)chunk, length);
 	} else {
 	    // Take a "chunk" from the ringbuf
-	    count -= rb_take(rb, (uint8_t*)chunk, length);
+	    if (mode & 0x2) {
+		count -= rb_drop(rb, length);
+	    } else {
+		count -= rb_take(rb, (uint8_t*)chunk, length);
+	    }
 	}
 	assert(count >= 0 && count < BYTEBUF_BYTES);
     }
