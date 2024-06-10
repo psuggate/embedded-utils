@@ -35,10 +35,10 @@ void rb_clear(ringbuf_t* rb)
     }
 
 /**
- * Fill as many entries as required or possible, and returns the number of bytes
+ * Copy as many entries as required or possible, and returns the number of bytes
  * written.
  */
-int32_t rb_fill(ringbuf_t* rb, const uint8_t* src, int32_t len)
+int32_t rb_copy(ringbuf_t* rb, const uint8_t* src, int32_t len)
     {
     int32_t count = rb_space(rb);
     int32_t head = rb->head;
@@ -74,6 +74,37 @@ int32_t rb_fill(ringbuf_t* rb, const uint8_t* src, int32_t len)
 
     return count;
     }
+
+int32_t rb_many(ringbuf_t* rb, uint8_t val, int32_t len)
+{
+    int32_t count = rb_space(rb);
+    int32_t head = rb->head;
+    uint8_t* dst;
+
+    if (count > len) {
+	count = len;
+    } else {
+	len = count;
+    }
+
+    if (head + len > rb->wrap) {
+        // If 'len' requires a "wrap," then first fill to the end of the buffer
+        count = rb->wrap - head + 1;
+	dst = (uint8_t*)rb->data + head;
+        memset((void*)dst, val, count);
+	count = len - count;
+        head = 0;
+    }
+
+    // Write (remaining) bytes into buffer, at the current "head"
+    dst = (uint8_t*)rb->data + head;
+    memset((void*)dst, val, count);
+    head += count;
+
+    // Update the 'ringbuf_t'
+    rb->head = head & rb->wrap;
+    return len;
+}
 
 /**
  * Take as many entries as required or possible, and returns the number of bytes

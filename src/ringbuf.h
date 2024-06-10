@@ -95,7 +95,8 @@ extern "C"
     ringbuf_t* rb_create(void* rb_ptr, int32_t size);
     void rb_clear(ringbuf_t* rb);
 
-    int32_t rb_fill(ringbuf_t* rb, const uint8_t* src, int32_t len);
+    int32_t rb_copy(ringbuf_t* rb, const uint8_t* src, int32_t len);
+    int32_t rb_many(ringbuf_t* rb, uint8_t val, int32_t len);
     int32_t rb_take(ringbuf_t* rb, uint8_t* dst, int32_t len);
     int32_t rb_drop(ringbuf_t* rb, int32_t len);
 

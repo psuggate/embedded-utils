@@ -89,13 +89,18 @@ void bytebuf_tb() {
 
 	if (mode & 0x1) {
 	    // Make a "chunk", then "fill" it into the ringbuf
-	    int words = (length + 3) >> 2;
-	    assert(words >= 0 && words <= 64);
-	    for (int j=words; j--;) {
-		assert(j >=0 && j < 64);
-		chunk[j] = rand();
+	    if (mode & 0x2) {
+		uint8_t val = mode >> 2;
+		count += rb_many(rb, val, length);
+	    } else {
+		int words = (length + 3) >> 2;
+		assert(words >= 0 && words <= 64);
+		for (int j=words; j--;) {
+		    assert(j >=0 && j < 64);
+		    chunk[j] = rand();
+		}
+		count += rb_copy(rb, (uint8_t*)chunk, length);
 	    }
-	    count += rb_fill(rb, (uint8_t*)chunk, length);
 	} else {
 	    // Take a "chunk" from the ringbuf
 	    if (mode & 0x2) {
