@@ -123,33 +123,6 @@ void strfmt_floating_bench()
     printf("\ndone\n\n");
 }
 
-/*
-static void run_microbench(const char* name, uint64_t rands[1000], int (*fun)(char*, uint64_t))
-{
-    clock_t start, end;
-    char buf[256];
-    uint64_t bytes = 0;
-    double ticks = 0.0;
-
-    for (int k=10; k--;) {
-        start = clock();
-        for (int i=1000; i--;) {
-            for (int j=1000; j--;) {
-                bytes += fun(buf, rands[j]);
-            }
-        }
-        end = clock();
-        ticks += ((double)(end - start)) / CLOCKS_PER_SEC;
-    }
-    printf("\t%s():\t\t%.3f (bytes: %lu, 10M)\n", name, ticks, bytes);
-}
-
-static int run_printi64(char* buf, uint64_t val)
-{
-    return 21 + buf - printi64(buf, (int64_t)val);
-}
-*/
-
 void strfmt_integral_bench()
 {
     volatile clock_t start, end;

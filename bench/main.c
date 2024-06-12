@@ -1,6 +1,7 @@
 #include "ringbuf_tb.h"
 #include "strfmt_tb.h"
 #include "response_tb.h"
+#include "stm32crc_tb.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -38,6 +39,7 @@ void gethex_tb(void)
 int main(int argc, char* argv[])
 {
     gethex_tb();
+    stm32crc_tb();
 
     ringbuf_tb();
     bytebuf_tb();
