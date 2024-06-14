@@ -19,12 +19,16 @@
 
 #define __use_bankers_rounding
 
+// The unrolled versions tend to be faster, but also more instructions.
+#define __unrolled_versions
+
 
 // -- 16-bit printing -- //
 
 static inline char* __printu16(char* buf, uint16_t n)
 {
-#if 0
+#ifndef __unrolled_versions
+
     char m[5];
     char* p = m;
 
@@ -39,7 +43,7 @@ static inline char* __printu16(char* buf, uint16_t n)
     }
     while (p > m);
 
-#else
+#else   /* __unrolled_versions */
 
     char m[4];
     char* p = m;
@@ -70,7 +74,7 @@ end2:
 end3:
     *buf++ = *(--p);
 
-#endif
+#endif   /* __unrolled_versions */
     *buf = '\0';
 
     return buf;
@@ -126,7 +130,8 @@ int sprinti16(char* buf, int16_t n)
 
 static inline char* __printu32(char* buf, uint32_t n)
 {
-#if 0
+#ifndef __unrolled_versions
+
     char m[10];
     char* p = m;
 
@@ -141,7 +146,7 @@ static inline char* __printu32(char* buf, uint32_t n)
     }
     while (p > m);
 
-#else
+#else   /* __unrolled_versions */
 
     char m[5];
     char* p = m;
@@ -178,7 +183,7 @@ end3:
 end4:
     *buf++ = *(--p);
 
-#endif
+#endif  /* __unrolled_versions */
     *buf = '\0';
 
     return buf;
@@ -217,7 +222,9 @@ int sprintu32(char* buf, uint32_t n)
     return __printu32(buf, (uint32_t)n) - buf;
 }
 
-
+/**
+ * Upper-case hexadecimal output, returning the "end-pointer."
+ */
 char* hex32(char* buf, uint32_t x)
 {
     for (int i=8; i--;)
