@@ -6,6 +6,8 @@
 #include <stdio.h>
 
 
+// -- Fake Flash Parameters -- //
+
 #define FLASH_PAGE_NUM  (64u)
 #define FLASH_PAGE_SIZE (2048u)
 #define FLASH_BASE      (uint64_t)(&flash_memory)
@@ -14,7 +16,8 @@
 #define MAX_NUM_BOOTLOADER_PAGES (22u)
 
 
-// State for testing
+// -- State for testing -- //
+
 static uint8_t flash_memory[FLASH_PAGE_NUM][FLASH_PAGE_SIZE];
 static uint8_t flash_erased[FLASH_PAGE_NUM];
 
@@ -23,9 +26,16 @@ static bool crc32_enabled = false;
 static uint32_t curr_crc = 0xfffffffful;
 static uint32_t bl_crc32 = 0;
 
+// Fake boot-ROM, for the firmware update
+// static uint8_t rom[3172] = {0};
+static uint8_t rom[44*1024] = {0};
+
+
+// -- Error Messages and STM32-like Constants -- //
+
 static const char* kImageCRCError = "Bootloader firmware CRC32 failed";
 static const char* kImageLengthError = "Bootloader firmware image length is invalid";
-static const char* kFlashEraseError = "Writing to Flash failed";
+static const char* kFlashEraseError = "Erasing Flash failed";
 static const char* kFlashWriteError = "Writing to Flash failed";
 
 static const uint32_t _estack = 0x20008000;
@@ -40,21 +50,19 @@ static const uint32_t jumpToApplication[4] = {
     HardFault_Handler, // Not required, but suppresses array-size warning
     };
 
-// static uint8_t rom[3172] = {0};
-static uint8_t rom[20*1024] = {0};
 
-
-void fill_rom(void)
+// Initialisation of the ROM contents, on start-up.
+static void fill_rom(void)
 {
     int len = sizeof(rom) / 4;
     uint32_t* ptr = (uint32_t*)rom;
-
     for (int i=len; i--;) {
-	ptr[i] = (uint32_t)rand();
+        ptr[i] = (uint32_t)rand();
     }
 }
 
-void Error_Handler(void)
+// Mimics a routine often found in STM32 code.
+static void Error_Handler(void)
 {
     assert(false);
 }
@@ -64,9 +72,7 @@ void Error_Handler(void)
 
 bool start_crc32(const uint8_t* buf, uint32_t len, uint32_t* crc)
 {
-    if (crc32_enabled != false) {
-	return false;
-    }
+    assert(crc32_enabled == false);
     crc32_enabled = true;
     curr_crc = stm32crc_calc(buf, len);
     *crc = curr_crc;
@@ -78,7 +84,7 @@ uint32_t accum_crc32(const uint8_t* buf, uint32_t len)
     uint32_t crc = curr_crc;
     assert(crc32_enabled == true);
     for (int i=0; i<len; i++) {
-	crc = stm32crc_next(crc, buf[i]);
+        crc = stm32crc_next(crc, buf[i]);
     }
     return (curr_crc = crc);
 }
@@ -98,12 +104,12 @@ bool flash_erase(uint32_t page, uint32_t num)
 {
     // printf("FLASH ERASE: page = %u, num = %u\n", page, num);
     assert(page < FLASH_PAGE_NUM || (page + num) <= FLASH_PAGE_NUM);
-    if (page >= FLASH_PAGE_NUM || page + num > FLASH_PAGE_NUM)
-    {
-	return false;
+    assert(page + num <= MAX_NUM_BOOTLOADER_PAGES);
+    if (page >= FLASH_PAGE_NUM || page + num > FLASH_PAGE_NUM) {
+        return false;
     }
     for (int i=page; i<page+num; i++) {
-	flash_erased[i] = 1;
+        flash_erased[i] = 1;
     }
     return true;
 }
@@ -115,6 +121,7 @@ bool flash_write(uint64_t loc, uint64_t val)
 
     uint64_t offset = loc - FLASH_BASE;
     uint32_t page = offset / FLASH_PAGE_SIZE;
+    assert(page < MAX_NUM_BOOTLOADER_PAGES);
     assert(flash_erased[page] == 1);
 
     uint32_t index = offset % FLASH_PAGE_SIZE;
@@ -221,7 +228,7 @@ const char* update_bootloader(const uint8_t* bootrom, uint32_t length, uint32_t 
 
     if (bl_crc32 != crc32)
         {
-	printf("CRC: 0x%08x (LEN = %u)\n", bl_crc32, length);
+        printf("CRC: 0x%08x (LEN = %u)\n", bl_crc32, length);
         return kImageCRCError;
         }
 
@@ -272,6 +279,16 @@ flash_lock:
     }
 
 
+/**
+ * Testbench for firmware-update style code, that performs a two-stage firmware
+ * update of a "bootloader," of an embedded device. The update is performed from
+ * "application" code, where the bootloader is overwritten with a new version.
+ *
+ * Note:
+ *  - a "jump-to-app" section is written first, so that if the bootloader-update
+ *    fails, the application continues to operate -- minimising the number of
+ *    events that can brick a device;
+ */
 void fwupdate_tb()
 {
     printf("\nFake 2-stage Firmware Update Test\n");
@@ -282,10 +299,9 @@ void fwupdate_tb()
     // printf("CRC: 0x%08x (LEN = %u)\n", crc, len);
     const char* res = update_bootloader(rom, len, crc);
 
-    if (res != NULL)
-    {
-	printf("Failed: %s\n", res);
-	assert(false);
+    if (res != NULL) {
+        printf("Failed: %s\n", res);
+        assert(false);
     }
 
     printf("passed\n");
