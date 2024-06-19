@@ -33,7 +33,6 @@
 
 #include "stm32crc.h"
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdlib.h>
 
 

@@ -35,7 +35,7 @@
 #define DEF_LIBCRC_CHECKSUM_H
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 /*
  * #define CRC_POLY_xxxx
