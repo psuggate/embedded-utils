@@ -31,13 +31,10 @@
  * calculate a 32 bit CRC value of a sequence of bytes.
  */
 
+#include "stm32crc.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include "stm32crc.h"
-
-
-#undef __crc32_reflect
 
 
 static void             stm32crc_init(void);
@@ -51,93 +48,77 @@ static uint32_t         crc_tab32[256];
  * value for a byte string that is passed to the function together with a
  * parameter indicating the length.
  */
-uint32_t stm32crc_calc(const unsigned char *input_str, size_t num_bytes) {
+uint32_t stm32crc_calc(const uint8_t* input_str, size_t num_bytes)
+    {
+    uint32_t crc;
+    uint32_t tmp;
+    uint32_t long_c;
+    const unsigned char *ptr;
+    size_t a;
 
-        uint32_t crc;
-        uint32_t tmp;
-        uint32_t long_c;
-        const unsigned char *ptr;
-        size_t a;
-
-        if (!crc_tab32_init) {
-	    stm32crc_init();
-	}
-
-        crc = CRC_START_32;
-        ptr = input_str;
-
-        if (ptr != NULL) for (a=0; a<num_bytes; a++) {
-
-                long_c = 0x000000FFL & (uint32_t) *ptr;
-#ifdef  __crc32_reflect
-                tmp    =  crc       ^ long_c;
-                crc    = (crc >> 8) ^ crc_tab32[ tmp & 0xff ];
-#else  /* !__crc32_reflect */
-                tmp    = (crc >> 24) ^ long_c;
-                crc    = (crc <<  8) ^ crc_tab32[tmp & 0xff];
-#endif /* !__crc32_reflect */
-                ptr++;
+    if (!crc_tab32_init)
+        {
+        stm32crc_init();
         }
 
-#ifdef  __crc32_reflect
-        crc ^= 0xffffffffL;
-#endif /* !__crc32_reflect */
+    crc = CRC_START_32;
+    ptr = input_str;
 
-        return crc & 0xffffffffL;
+    if (ptr != NULL)
+        for (a = 0; a < num_bytes; a++)
+            {
+            long_c = 0x000000FFL & (uint32_t) *ptr;
+            tmp = (crc >> 24) ^ long_c;
+            crc = (crc << 8) ^ crc_tab32[tmp & 0xff];
+            ptr++;
+            }
 
-}  /* stm32crc_calc */
+    return crc & 0xFFFFFFFFL;
+    }
 
 /**
  * The function stm32crc_next() calculates a new CRC-32 value based on the
  * previous value of the CRC and the next byte of the data to be checked.
  */
-uint32_t stm32crc_next( uint32_t crc, unsigned char c ) {
-
+uint32_t stm32crc_next(uint32_t crc, uint8_t c)
+    {
     uint32_t tmp;
     uint32_t long_c;
 
-    long_c = 0x000000ffL & (uint32_t) c;
+    if (!crc_tab32_init)
+        {
+        stm32crc_init();
+        }
 
-    if ( ! crc_tab32_init ) stm32crc_init();
+    long_c = 0x000000FFL & (uint32_t) c;
+    tmp = (crc >> 24) ^ long_c;
+    crc = (crc << 8) ^ crc_tab32[tmp & 0xff];
 
-    tmp = crc ^ long_c;
-    crc = (crc >> 8) ^ crc_tab32[ tmp & 0xff ];
-
-    return crc & 0xffffffffL;;
-
-}  /* stm32crc_next */
+    return crc & 0xFFFFFFFFL;
+    }
 
 /**
  * For optimal speed, the CRC32 calculation uses a table with pre-calculated
  * bit patterns which are used in the XOR operations in the program. This table
  * is generated once, the first time the CRC update routine is called.
  */
-static void stm32crc_init(void) {
-
+static void stm32crc_init(void)
+    {
     uint32_t i;
     uint32_t j;
     uint32_t crc;
 
-    for (i=0; i<256; i++) {
+    for (i = 0; i < 256; i++)
+        {
+        crc = i << 24;
 
-#ifdef  __crc32_reflect
-	crc = i;
-#else  /* !__crc32_reflect */
-	crc = i << 24;
-#endif /* !__crc32_reflect */
+        for (j = 0; j < 8; j++)
+            {
+            crc = (crc << 1) ^ (((crc >> 31) & 0x01L) * CRC_POLY_32);
+            }
 
-	for (j=0; j<8; j++) {
-#ifdef  __crc32_reflect
-	    if ( crc & 0x00000001L ) crc = ( crc >> 1 ) ^ CRC_POLY_32;
-	    else                     crc =   crc >> 1;
-#else  /* !__crc32_reflect */
-	    crc = (crc << 1) ^ (((crc >> 31) & 0x01L) * CRC_POLY_32);
-#endif /* !__crc32_reflect */
-	}
-
-	crc_tab32[i] = crc;
-    }
+        crc_tab32[i] = crc;
+        }
 
     crc_tab32_init = true;
-
-}  /* stm32crc_init */
+    }
