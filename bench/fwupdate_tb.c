@@ -27,14 +27,13 @@ static uint32_t curr_crc = 0xfffffffful;
 static uint32_t bl_crc32 = 0;
 
 // Fake boot-ROM, for the firmware update
-// static uint8_t rom[3172] = {0};
 static uint8_t rom[44*1024] = {0};
 
 
 // -- Error Messages and STM32-like Constants -- //
 
-static const char* kImageCRCError = "Bootloader firmware CRC32 failed";
-static const char* kImageLengthError = "Bootloader firmware image length is invalid";
+static const char* kImageCRCError = "Firmware CRC32 failed";
+static const char* kImageLengthError = "Firmware image length is incorrect";
 static const char* kFlashEraseError = "Erasing Flash failed";
 static const char* kFlashWriteError = "Writing to Flash failed";
 
@@ -102,7 +101,6 @@ bool finish_crc32(void)
 
 bool flash_erase(uint32_t page, uint32_t num)
 {
-    // printf("FLASH ERASE: page = %u, num = %u\n", page, num);
     assert(page < FLASH_PAGE_NUM || (page + num) <= FLASH_PAGE_NUM);
     assert(page + num <= MAX_NUM_BOOTLOADER_PAGES);
     if (page >= FLASH_PAGE_NUM || page + num > FLASH_PAGE_NUM) {
@@ -125,8 +123,6 @@ bool flash_write(uint64_t loc, uint64_t val)
     assert(flash_erased[page] == 1);
 
     uint32_t index = offset % FLASH_PAGE_SIZE;
-    // printf("FLASH WRITE: page = %u, index = %d, val = %lx\n", page, index, val);
-
     uint64_t* ptr = (uint64_t*)(void*)&flash_memory[page][index];
     *ptr = val;
 
@@ -136,14 +132,12 @@ bool flash_write(uint64_t loc, uint64_t val)
 void HAL_FLASH_Unlock(void)
 {
     assert(flash_locked);
-    // printf("FLASH UNLOCK\n");
     flash_locked = false;
 }
 
 void HAL_FLASH_Lock(void)
 {
     assert(!flash_locked);
-    // printf("FLASH LOCK\n");
     flash_locked = true;
 }
 
@@ -151,26 +145,23 @@ void HAL_FLASH_Lock(void)
 // -- Fake Bootloader-update Routines -- //
 
 const char* update_bootloader(const uint8_t* bootrom, uint32_t length, uint32_t crc32)
-    {
+{
     const char* result = NULL;
 
     // -- Preparation: Check that we are given a valid bootloader -- //
 
-    if (!start_crc32(bootrom, length, &bl_crc32) || !finish_crc32())
-        {
+    if (!start_crc32(bootrom, length, &bl_crc32) || !finish_crc32()) {
         Error_Handler(); // HAL/config/internal/other error
-        }
+    }
 
-    if (bl_crc32 != crc32)
-        {
+    if (bl_crc32 != crc32) {
         return kImageCRCError;
-        }
+    }
 
     uint32_t num_pages = (length + FLASH_PAGE_SIZE - 1) / FLASH_PAGE_SIZE;
-    if (num_pages > MAX_NUM_BOOTLOADER_PAGES)
-        {
+    if (num_pages > MAX_NUM_BOOTLOADER_PAGES) {
         return kImageLengthError;
-        }
+    }
 
     // In case bootloader-update fails, we can try again ...
     const uint64_t* jmp = (uint64_t*)jumpToApplication;
@@ -179,17 +170,15 @@ const char* update_bootloader(const uint8_t* bootrom, uint32_t length, uint32_t 
 
     // -- Stage I: Erase current bootloader, and set a backup-jump -- //
 
-    if (!flash_erase(0, num_pages))
-        {
+    if (!flash_erase(0, num_pages)) {
         result = kFlashEraseError;
         goto flash_lock;
-        }
+    }
 
-    if (!flash_write(FLASH_BASE, jmp[0]) || !flash_write(FLASH_BASE+8, jmp[1]))
-        {
+    if (!flash_write(FLASH_BASE, jmp[0]) || !flash_write(FLASH_BASE+8, jmp[1])) {
         result = kFlashWriteError;
         goto flash_lock;
-        }
+    }
 
     // -- Stage II: Write new bootloader, except for the first page -- //
 
@@ -197,15 +186,13 @@ const char* update_bootloader(const uint8_t* bootrom, uint32_t length, uint32_t 
     const uint64_t* rom = (uint64_t*)(void*)bootrom;
     uint64_t dst = FLASH_BASE + (uint64_t)FLASH_PAGE_SIZE;
     int len = (length + 7) / 8;
-    for (int i=FLASH_PAGE_SIZE/8; i<len; i++)
-        {
-        if (!flash_write(dst, rom[i]))
-            {
+    for (int i=FLASH_PAGE_SIZE/8; i<len; i++) {
+        if (!flash_write(dst, rom[i])) {
             result = kFlashWriteError;
             goto flash_lock;
-            }
-        dst += 8;
         }
+        dst += 8;
+    }
 
     HAL_FLASH_Lock();
 
@@ -213,70 +200,60 @@ const char* update_bootloader(const uint8_t* bootrom, uint32_t length, uint32_t 
 
     // Calculate the "partial" CRC32 using the first 2 kB of the boot ROM, and
     // then the rest from the updated Flash
-    if (!start_crc32(bootrom, FLASH_PAGE_SIZE, &bl_crc32))
-        {
+    if (!start_crc32(bootrom, FLASH_PAGE_SIZE, &bl_crc32)) {
         Error_Handler(); // HAL/config/internal/other error
-        }
+    }
 
     dst = FLASH_BASE + (uint64_t)FLASH_PAGE_SIZE;
     bl_crc32 = accum_crc32((uint8_t*)(void*)dst, length - FLASH_PAGE_SIZE);
 
-    if (!finish_crc32())
-        {
+    if (!finish_crc32()) {
         Error_Handler(); // HAL/config/internal/other error
-        }
+    }
 
-    if (bl_crc32 != crc32)
-        {
+    if (bl_crc32 != crc32) {
         printf("CRC: 0x%08x (LEN = %u)\n", bl_crc32, length);
         return kImageCRCError;
-        }
+    }
 
     // -- Stage IV: Write 'page[0]' of the new bootloader, to finish -- //
 
     HAL_FLASH_Unlock();
 
     // Write the first page of the new bootloader
-    // Todo: check, and rewrite if required ??
-    if (!flash_erase(0, 1))
-        {
+    if (!flash_erase(0, 1)) {
         result = kFlashEraseError;
         goto flash_lock;
-        }
+    }
 
     dst = FLASH_BASE;
-    for (int i=0; i < FLASH_PAGE_SIZE/8; i++)
-        {
-        if (!flash_write(dst, rom[i]))
-            {
+    for (int i=0; i < FLASH_PAGE_SIZE/8; i++) {
+        if (!flash_write(dst, rom[i])) {
             result = kFlashWriteError;
             goto flash_lock;
-            }
-        dst += 8;
         }
+        dst += 8;
+    }
 
 flash_lock:
     HAL_FLASH_Lock();
 
-    if (result != NULL)
-        {
+    if (result != NULL) {
         return result;
-        }
+    }
 
     // -- Finalise: Perform one last CRC32 check of entire bootloader -- //
 
-    if (!start_crc32((const uint8_t*)FLASH_BASE, length, &bl_crc32) || !finish_crc32())
-        {
+    if (!start_crc32((const uint8_t*)FLASH_BASE, length, &bl_crc32) || !finish_crc32()) {
         Error_Handler(); // HAL/config/internal/other error
-        }
+    }
 
-    if (bl_crc32 != crc32)
-        {
+    if (bl_crc32 != crc32) {
         result = kImageCRCError;
-        }
+    }
 
     return result;
-    }
+}
 
 
 /**
@@ -296,7 +273,6 @@ void fwupdate_tb()
     fill_rom();
     uint32_t len = sizeof(rom);
     uint32_t crc = stm32crc_calc(rom, len);
-    // printf("CRC: 0x%08x (LEN = %u)\n", crc, len);
     const char* res = update_bootloader(rom, len, crc);
 
     if (res != NULL) {
